@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../providers/great_places.dart';
 import '../utils/app_routes.dart';
-import 'package:provider/provider.dart';
 
 class PlacesListScreen extends StatelessWidget {
   const PlacesListScreen({Key? key}) : super(key: key);
@@ -20,7 +21,7 @@ class PlacesListScreen extends StatelessWidget {
           )
         ],
       ),
-     body: FutureBuilder(
+      body: FutureBuilder(
         future: Provider.of<GreatPlaces>(context, listen: false).loadPlaces(),
         builder: (ctx, snapshot) => snapshot.connectionState ==
                 ConnectionState.waiting
@@ -40,6 +41,8 @@ class PlacesListScreen extends StatelessWidget {
                             ),
                           ),
                           title: Text(greatPlaces.itemByIndex(i).title),
+                          subtitle: Text(
+                              greatPlaces.itemByIndex(i).location!.address!),
                           onTap: () {},
                         ),
                       ),

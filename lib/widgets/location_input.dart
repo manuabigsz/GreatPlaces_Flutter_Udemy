@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:greatplaces/screens/map_screen.dart';
-import 'package:greatplaces/utils/location_util.dart';
 import 'package:location/location.dart';
 
+import '../screens/map_screen.dart';
+import '../utils/location_util.dart';
+
 class LocationInput extends StatefulWidget {
-  const LocationInput({super.key});
+  final Function onSelectPosition;
+
+  const LocationInput(this.onSelectPosition, {Key? key}) : super(key: key);
 
   @override
   State<LocationInput> createState() => _LocationInputState();
@@ -14,11 +17,10 @@ class LocationInput extends StatefulWidget {
 class _LocationInputState extends State<LocationInput> {
   String? _previewImageUrl;
 
-  Future<void> _getCurrentUserLocation() async {
-    final locaData = await Location().getLocation();
+  void _showPreview(double lat, double lng) {
     final staticMapImageUrl = LocationUtil.generateLocationPreviewImage(
-      latitude: locaData.latitude,
-      longitude: locaData.longitude,
+      latitude: lat,
+      longitude: lng,
     );
 
     setState(() {
@@ -26,18 +28,32 @@ class _LocationInputState extends State<LocationInput> {
     });
   }
 
+  Future<void> _getCurrentUserLocation() async {
+    try {
+      final locData = await Location().getLocation();
+
+      _showPreview(locData.latitude!, locData.longitude!);
+      widget.onSelectPosition(LatLng(
+        locData.latitude!,
+        locData.longitude!,
+      ));
+    } catch (e) {
+      return;
+    }
+  }
+
   Future<void> _selectOnMap() async {
-    final LatLng selectedPosition = await Navigator.of(context).push(
+    final LatLng? selectedPosition = await Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (ctx) => MapScreen(),
       ),
     );
 
-    if(selectedPosition == null) return;
+    if (selectedPosition == null) return;
 
-    //...
-    print(selectedPosition.latitude);
+    _showPreview(selectedPosition.latitude, selectedPosition.longitude);
+    widget.onSelectPosition(selectedPosition);
   }
 
   @override
@@ -49,12 +65,13 @@ class _LocationInputState extends State<LocationInput> {
           width: double.infinity,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-              border: Border.all(
-            width: 1,
-            color: Colors.grey,
-          )),
+            border: Border.all(
+              width: 1,
+              color: Colors.grey,
+            ),
+          ),
           child: _previewImageUrl == null
-              ? Text('Localização não informada')
+              ? const Text('Localização não informada!')
               : Image.network(
                   _previewImageUrl!,
                   fit: BoxFit.cover,
@@ -64,22 +81,18 @@ class _LocationInputState extends State<LocationInput> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              child: TextButton.icon(
-                icon: const Icon(Icons.location_on),
-                label: const Text('Localização atual'),
-                onPressed: _getCurrentUserLocation,
-              ),
+            TextButton.icon(
+              icon: const Icon(Icons.location_on),
+              label: const Text('Localização atual'),
+              onPressed: _getCurrentUserLocation,
             ),
-            Expanded(
-              child: TextButton.icon(
-                icon: const Icon(Icons.location_on),
-                label: const Text('Selecione no mapa'),
-                onPressed: _selectOnMap,
-              ),
+            TextButton.icon(
+              icon: const Icon(Icons.map),
+              label: const Text('Selecione no Mapa'),
+              onPressed: _selectOnMap,
             ),
           ],
-        ),
+        )
       ],
     );
   }
